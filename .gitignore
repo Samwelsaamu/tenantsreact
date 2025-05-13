@@ -4,3 +4,9 @@ be/public/documents/
 be/public/reports/
 be/public/uploads/
 be/.env
+
+fe/node_modules/
+fe/build/
+fe/build.zip
+
+nodejs/node_modules/
