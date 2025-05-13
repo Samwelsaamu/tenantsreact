@@ -1,0 +1,39 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateMailsTable extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        // Schema::create('mails', function (Blueprint $table) {
+        //     $table->bigIncrements('id');
+        //     $table->string('mailid')->unique();
+        //     $table->string('subject');
+        //     $table->string('message');
+        //     $table->string('from');
+        //     $table->string('attachments');
+        //     $table->string('folder');
+        //     $table->string('thread');
+        //     $table->string('status')->default('New');
+        //     $table->timestamps();
+        // });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::dropIfExists('mails');
+    }
+}

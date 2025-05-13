@@ -1,0 +1,1076 @@
+import DashSideNavBar from './DashSideNavBar';
+import DashNavBar from './DashNavBar';
+import { useEffect, useMemo, useState, useContext } from 'react';
+import DashFooter from './DashFooter';
+import Spinner from 'react-bootstrap/Spinner';
+
+import axios from 'axios';
+
+import { useNavigate } from 'react-router-dom';
+import Select from 'react-select';
+import { useParams } from 'react-router';
+import { useDropzone } from 'react-dropzone';
+
+import Swal from 'sweetalert';
+import AddWaterbill from './AddWaterbill';
+import TableSmallSpinner from '../spinners/TableSmallSpinner';
+import VacatedWaterTable from './Tables/VacatedWaterTable';
+import WaterbillTable from './Tables/WaterbillTable';
+import WaterbillPreviewNoMatchTable from './Tables/WaterbillPreviewNoMatchTable';
+import WaterbillPreviewMatchTable from './Tables/WaterbillPreviewMatchTable';
+import WaterbillPreviewSavedTable from './Tables/WaterbillPreviewSavedTable';
+import ReLogin from '../home/ReLogin';
+import WaterbillMessageTable from './Tables/WaterbillMessageTable';
+import TenantMessageTable from './Tables/TenantMessageTable';
+import { LoginContext } from '../contexts/LoginContext';
+
+const baseStyle={
+    flex:1,
+    display:"flex",
+    flexDirection:"column",
+    alignItems:"center",
+    padding:"6px",
+    borderWidth:2,
+    borderRadius:2,
+    border:"4px dotted #007bff",
+    backgroundColor:"#ffffff",
+    color:"#bdbdbd",
+    outline:"none",
+    transition:"border .24s ease-in-out"
+}
+
+const activeStyle={
+    border:"2px dotted #6f42c1"
+}
+
+const acceptStyle={
+    border:"2px dotted #00e676"
+}
+
+const rejectStyle={
+    border:"2px dotted #ff1744"
+}
+
+function MessageTenant(props) {
+    document.title="Send Tenant Messages";
+    
+    const {socket,loggedname, setLoggedName, loggedtoken, setLoggedToken, loggedpermissions, setLoggedPermissions, loggedroles, setLoggedRoles, loggedrole,setLoggedRole,sitedata,setSiteData} =useContext(LoginContext);
+        
+    const [loggedoff,setLoggedOff]=useState(false);
+    const navigate=useNavigate();
+
+
+    // State for date selected by user
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    let par=useParams()
+
+    const [id,setID]=useState((par.id)?par.id:'')
+    const [month,setMonth]=useState((par.month)?par.month:`${selectedDate.getFullYear()} ${selectedDate.getMonth()+1}`)
+
+    // console.log(id,month)
+
+    const [closed,setClosed]=useState(false)
+    const [isOpen, setIsOpen] = useState(false)
+
+    const [formdata,setFormData]=useState({
+        Phone:'',
+        Message:'Greetings {name} of {house}, Please clear you Nov 2024 arrears before 10th Nov. Thank you.',
+        error_list:[],
+    });
+
+    const [msglength, setMsglength] = useState(0)
+    const [msgcount, setMsgcount] = useState(0)
+
+    // State for date selected by user
+    // const [selectedDate, setSelectedDate] = useState(new Date());
+
+    // State for text above calander
+    const [calendarText, setCalendarText] = useState(selectedDate.toDateString());
+
+    // Function to update selected date and calander text
+    const handleDateChange = (value) => {
+        setSelectedDate(value);
+        setCalendarText(value.toDateString());
+    };
+    
+
+    // Function to handle selected Year change
+    const handleYearChange = (value) => {
+        const yearValue = value.getFullYear();
+        setCalendarText(`${yearValue} Year`);
+    };
+
+    const handleInputChange=(e)=>{
+        e.persist();
+        setUploadWaterbill({
+            upwaterbill:[],
+        })
+        setFormData({...formdata,[e.target.name]:e.target.value})
+
+        if(e.target.name=='Message'){
+            let msg_length=e.target.value.length;
+            setMsglength(msg_length);
+
+            if (msg_length>160) {
+                let msg_count=Math.floor(msg_length/160)+1;
+                setMsgcount(msg_count);
+            }
+            else{
+                let msg_count=1;
+                setMsgcount(msg_count);
+            }
+
+        }
+    }
+    
+
+    const [date, setDate] = useState(new Date());
+
+    const [waterbillpropertyid,setWaterbillPropertyId]=useState([""]);
+    const [waterbillmonth,setWaterbillMonth]=useState([""]);
+    const [updatemonths, setUpdateMonths] = useState([""]);
+    const [propertyinfo, setPropertyinfo] = useState([""]);
+    const [waterbilldata, setWaterbillData] = useState([]);
+    
+    const [currentwaterbill, setCurrentWaterbill] = useState([""]);
+    
+    const [preview, setPreview] = useState(false);
+
+    
+
+    const [search,setSearch]=useState({
+        value:'',
+        result:[]
+    })
+
+    const [uploadwaterbill,setUploadWaterbill]=useState({
+        upwaterbill:[]
+      })
+    
+    const [totalvalid,setTotalValid]=useState(0)
+    const [allchecked,setAllchecked]=useState(false);
+    const [totalchecked,setTotalChecked]=useState(0);
+
+    const [show,setShow]=useState(false);
+   
+
+    // const [loading,setLoading]=useState(true);
+    const [loadingmonths,setLoadingMonths]=useState(true);
+    const [loadingwater,setLoadingWater]=useState(true);
+    const [loadingstats,setLoadingStats]=useState(true);
+    
+
+    const [loading,setLoading]=useState(false);
+
+    const [loadingresok,setLoadingResOk]=useState('');
+    const [loadingres,setLoadingRes]=useState('');
+    
+    const [selectedmonth,setSelectedMonth]=useState('');
+    const [totalmonths,setTotalMonths]=useState(0);
+
+    
+
+    const {
+        getRootProps,
+        getInputProps,
+        isDragActive,
+        isDragAccept,
+        isDragReject,
+        acceptedFiles
+    }= useDropzone({ accept:'.xls,.xlsx'});
+
+    const style=useMemo(
+        () => ({
+            ...baseStyle,
+            ...(isDragActive ? activeStyle:{}),
+            ...(isDragAccept ? acceptStyle:{}),
+            ...(isDragReject ? rejectStyle:{}),
+        }),
+        [isDragActive, isDragReject, isDragAccept]
+    );
+    
+    
+
+    // /properties/dash/payments
+    // /properties/dash/water
+    // /properties/dash/water/prev
+    // /messages/water/1/2022 12
+    // /properties/updateload/waterbill/1/2022 10
+    // /properties/download/Reports/Waterbill/1/2022%2012
+    // /properties/save/waterbill/uploadupdate
+
+
+    useEffect(()=>{
+        let doneloading=true;
+        if (doneloading) {
+            setLoadingMonths(true)
+        }
+        const getPrevMonths = async (e) => { 
+            const arr1 = [];
+                arr1.push({value: '', label: 'Select Property' });
+            let url=`/v2/update/messages/tenant/load/${id}`;
+            if(id===''){
+                url='/v2/update/waterbill/load';
+            }
+            else{
+                setLoadingMonths(false)
+                setLoadingWater(false)
+                return false;
+                // url=`/v2/update/messages/tenant/load/${id}`;
+            }
+            await axios.get(url)
+            .then(response=>{
+                if (doneloading) {
+                    if(response.data.status=== 200){
+                        let respropertyinfo = response.data.propertyinfo;
+                        
+                        let resthisproperty = response.data.thisproperty;
+
+                        respropertyinfo.map((monthsup) => {
+                            return arr1.push({value: monthsup.id, label: monthsup.Plotname , data: monthsup});
+                        });
+                        setPropertyinfo(arr1)
+                        
+                        let options=[];
+                        if(id!==''){
+                            options={value: resthisproperty.id, label: resthisproperty.Plotname+'('+resthisproperty.Plotcode+')' , data: resthisproperty}
+                        }
+                        
+                        setWaterbillPropertyId(options)
+                        setLoadingMonths(false)
+                    }
+                    else if(response.data.status=== 401){
+                        setLoggedOff(true);    
+                        Swal("Error1",response.data.message,"error");
+                    }
+                    else if(response.data.status=== 500){
+                        Swal("Error2",response.data.message,"error");
+                    }
+                    else{
+                        setLoadingMonths(false)
+                    }
+                    setLoadingMonths(false)
+                }
+            })
+            .catch(error=>{
+                if(!localStorage.getItem("auth_token")){
+                    let ex=error['response'].data.message;
+                    if(ex==='Unauthenticated.'){
+                        if(!localStorage.getItem("auth_token")){
+                            setLoggedOff(true); 
+                        }  
+                        else{ 
+                            setLoggedOff(true); 
+                            localStorage.removeItem('auth_token');
+                            localStorage.removeItem('auth_name');
+                        }              
+                    }
+                    else{
+                        Swal("Error2",""+error,"error");
+                    }
+                    setLoadingMonths(false)
+                }
+                else{
+                    let ex=error['response'].data.message;
+                    if(ex==='Unauthenticated.'){
+                        setLoggedOff(true); 
+                        localStorage.removeItem('auth_token');
+                        localStorage.removeItem('auth_name');
+                    }
+                    else{
+                        setLoadingMonths(false)
+                        Swal("Error",""+error,"error");
+                    }
+                }
+            })
+        };
+        getPrevMonths();
+
+        return ()=>{
+            doneloading=false;
+            
+            setLoadingMonths(false)
+        }
+    },[loggedoff])
+
+
+    useEffect(()=>{
+        let doneloading=true;
+        if (doneloading) {
+            setLoadingWater(true)
+        }
+        const getWaterbill = async (e) => { 
+            const arr = [];
+            // arr.push({value: '', label: 'Select Month' });
+            const arr1 = [];
+            arr1.push({value: '', label: 'Select Property' });
+            let url=`/v2/update/messages/tenant/load/${id}`;
+            if(id===''){
+                setLoadingWater(false)
+                return false;
+            }
+            else{
+                url=`/v2/update/messages/tenant/load/${id}`;
+            }
+            await axios.get(url)
+            .then(response=>{
+                if (doneloading) {
+                    if(response.data.status=== 200){
+                        let respropertyinfo = response.data.propertyinfo;
+                        let resthisproperty = response.data.thisproperty;
+                        setWaterbillData(response.data.waterbilldata);
+
+                        respropertyinfo.map((monthsup) => {
+                            return arr1.push({value: monthsup.id, label: monthsup.Plotname , data: monthsup});
+                        });
+                        setPropertyinfo(arr1)
+                        
+                        let options=[];
+                        if(id!==''){
+                            options={value: resthisproperty.id, label: resthisproperty.Plotname+'('+resthisproperty.Plotcode+')' , data: resthisproperty}
+                        }
+                        setWaterbillPropertyId(options)
+                    }
+                    else if(response.data.status=== 401){
+                        setLoggedOff(true);    
+                        Swal("Error7",response.data.message,"error");
+                    }
+                    else if(response.data.status=== 500){
+                        Swal("Error8",response.data.message,"error");
+                    }
+                    setLoadingWater(false)
+                }
+            })
+            .catch(error=>{
+                if(!localStorage.getItem("auth_token")){
+                    let ex=error['response'].data.message;
+                    if(ex==='Unauthenticated.'){
+                        if(!localStorage.getItem("auth_token")){
+                            setLoggedOff(true); 
+                        }  
+                        else{ 
+                            setLoggedOff(true); 
+                            localStorage.removeItem('auth_token');
+                            localStorage.removeItem('auth_name');
+                        }              
+                    }
+                    else{
+                        Swal("Error",""+error,"error");
+                    }
+                    setLoadingWater(false)
+                }
+                else{
+                    let ex=error['response'].data.message;
+                    if(ex==='Unauthenticated.'){
+                        setLoggedOff(true); 
+                        localStorage.removeItem('auth_token');
+                        localStorage.removeItem('auth_name');
+                    }
+                    else{
+                        setLoadingWater(false)
+                        Swal("Error",""+error,"error");
+                    }
+                }
+            })
+        };
+        if(!acceptedFiles[0]){
+            getWaterbill();
+        }
+        
+
+        return ()=>{
+            doneloading=false;
+        }
+    },[id,month,loggedoff])
+
+    const loadMessages =() =>{
+        let doneloading=true;
+        if (doneloading) {
+            setLoadingWater(true)
+        }
+        const getWaterbill = async (e) => { 
+            const arr = [];
+            // arr.push({value: '', label: 'Select Month' });
+            const arr1 = [];
+            arr1.push({value: '', label: 'Select Property' });
+            let url=`/v2/update/messages/tenant/load/${id}`;
+            if(id===''){
+                setLoadingWater(false)
+                return false;
+            }
+            else{
+                url=`/v2/update/messages/tenant/load/${id}`;
+            }
+            await axios.get(url)
+            .then(response=>{
+                if (doneloading) {
+                    if(response.data.status=== 200){
+                        let respropertyinfo = response.data.propertyinfo;
+                        
+
+                        let resthisproperty = response.data.thisproperty;
+
+                        setWaterbillData(response.data.waterbilldata);
+
+                        respropertyinfo.map((monthsup) => {
+                            return arr1.push({value: monthsup.id, label: monthsup.Plotname , data: monthsup});
+                        });
+                        setPropertyinfo(arr1)
+
+
+                        let options=[];
+                        if(id!==''){
+                            options={value: resthisproperty.id, label: resthisproperty.Plotname+'('+resthisproperty.Plotcode+')' , data: resthisproperty}
+                        }
+                        
+                        setWaterbillPropertyId(options)
+                       
+                    }
+                    else if(response.data.status=== 401){
+                        setLoggedOff(true);    
+                        Swal("Error7",response.data.message,"error");
+                    }
+                    else if(response.data.status=== 500){
+                        Swal("Error8",response.data.message,"error");
+                    }
+                    setLoadingWater(false)
+                }
+            })
+            .catch(error=>{
+                if(!localStorage.getItem("auth_token")){
+                    let ex=error['response'].data.message;
+                    if(ex==='Unauthenticated.'){
+                        if(!localStorage.getItem("auth_token")){
+                            setLoggedOff(true); 
+                        }  
+                        else{ 
+                            setLoggedOff(true); 
+                            localStorage.removeItem('auth_token');
+                            localStorage.removeItem('auth_name');
+                        }              
+                    }
+                    else{
+                        Swal("Error",""+error,"error");
+                    }
+                    setLoadingWater(false)
+                }
+                else{
+                    let ex=error['response'].data.message;
+                    if(ex==='Unauthenticated.'){
+                        setLoggedOff(true); 
+                        localStorage.removeItem('auth_token');
+                        localStorage.removeItem('auth_name');
+                    }
+                    else{
+                        setLoadingWater(false)
+                        Swal("Error",""+error,"error");
+                    }
+                }
+            })
+        };
+        
+        getWaterbill();
+            
+            
+    }
+
+
+    useEffect(()=>{
+        if(id!==''){
+            let thisurl=`/messages/tenant/${id}`;
+            navigate(thisurl)
+        }
+        
+        setUploadWaterbill({
+            upwaterbill:[],
+        });
+    },[id,month])
+
+    
+    useEffect(()=>{
+        
+        let previewuncheckedtotal=0;
+        waterbilldata.map((waterbilld) => {
+            if((waterbilld.phone.length ==13) && (waterbilld.isblacklisted =='No' || waterbilld.isblacklisted ==null)){
+                previewuncheckedtotal++;
+            }
+        })
+
+        setTotalValid(previewuncheckedtotal)
+        
+    },[waterbilldata])
+
+    
+    useEffect(()=>{
+        if(uploadwaterbill.upwaterbill.length < totalvalid){
+            setAllchecked(false)
+            if(uploadwaterbill.upwaterbill.length===0){
+                setAllchecked(false)
+            }
+        }
+        
+        else if(uploadwaterbill.upwaterbill.length===totalvalid){
+            setAllchecked(true)
+            if(uploadwaterbill.upwaterbill.length===0){
+                setAllchecked(false)
+            }
+        }
+        
+        
+    },[uploadwaterbill.upwaterbill.length])
+
+    
+
+    const handleClose = () => {
+        setShow(false);
+        document.title="Add or Upload Waterbill";
+    };
+
+    const handleShow = (waterbill) => {
+        setShow(true);
+        setCurrentWaterbill(waterbill)
+    };
+
+  
+    function handleWaterbillMonthChange(val) {
+    // setWaterbillPropertyId(val.value)
+        setLoadingMonths(true)
+        setMonth(val.value)
+        let monthoptions={value: val.value, label: val.label}
+        setWaterbillMonth(monthoptions) 
+        setLoadingMonths(false)
+    }
+
+    function handlePropertyChange(val) {
+        setLoadingMonths(true)
+        setID(val.value)
+        let options={value: val.value, label: val.label , data: val}
+        setWaterbillPropertyId(options) 
+        setLoadingMonths(false)
+    }
+
+    const handleSearchChange =(e) =>{
+        setLoadingMonths(true)
+        const results=waterbilldata.filter(waterbill =>{
+            if(e.target.value=== '') return waterbilldata
+            return waterbill.housename.toLowerCase().includes(e.target.value.toLowerCase()) || waterbill.tenantname.toLowerCase().includes(e.target.value.toLowerCase())
+        })
+        setSearch({
+            value:e.target.value,
+            result:results
+        })
+        setLoadingMonths(false)
+    }
+
+
+    const handleChange= (e) => {
+        const {value,checked}=e.target;
+        const {upwaterbill} =uploadwaterbill;
+
+        if(value==='all'){
+            const arr = [];
+            if(checked){
+                waterbilldata.map((waterbilld) => {
+                    if((waterbilld.phone.length ==13) && (waterbilld.isblacklisted =='No' || waterbilld.isblacklisted ==null)){
+                        String.prototype.namef =function() { return this.replace(/{fname}/g, waterbilld.tenantfname) }
+                        String.prototype.name =function() { return this.replace(/{name}/g, waterbilld.tenantname) }
+                        String.prototype.house =function() { return this.replace(/{house}/g, waterbilld.housename) }
+                        let message=(formdata.Message).namef();
+                        message=(message).name();
+                        message=(message).house();
+                        arr.push((formdata.Message == message?waterbilld.phone:waterbilld.phone+'/'+waterbilld.house+'/'+message));
+                        // arr.push(waterbilld.phone+'/'+waterbilld.house+'/WATER BILL: Greetings '+waterbilld.housename+' :'+waterbilld.monthdate+';Previous:'+waterbilld.previous+';Current:'+waterbilld.current+';UnitCost Kshs.'+waterbilld.cost+';Units:'+waterbilld.units+';'+(waterbilld.total_os>0?'CC:'+waterbilld.total+';Other:'+waterbilld.total_os+';':'')+'Total Kshs.'+(waterbilld.total+waterbilld.total_os)+'.Thank You');
+                    }
+                })
+                setUploadWaterbill({
+                    upwaterbill:arr,
+                })
+            }
+            else{
+                setUploadWaterbill({
+                    upwaterbill:[],
+                })
+            }
+            
+        }
+        else{
+            if(checked){
+                setUploadWaterbill({
+                    upwaterbill:[... upwaterbill,value],
+                });
+                
+            }
+            else{
+                setUploadWaterbill({
+                    upwaterbill:upwaterbill.filter((e) => e !== value),
+                })
+            }
+
+        }
+    }
+
+//     savepid
+// savemonth
+// waterbillvaluesupdate
+
+    const submitWaterbill= (e)=>{
+        e.preventDefault();
+        if((formdata.Message).trim() ===''){
+            Swal("Enter Message Details","Please Enter Message you wish to Send","error");
+            return;
+        }
+        let form='';
+        let url='';
+        if(uploadwaterbill.upwaterbill[0].length == 13){
+            form={
+                Phone:uploadwaterbill.upwaterbill,
+                Message:formdata.Message,
+            }
+            url=`/v2/send/message/tenant`;
+        }
+        else{
+            form={
+                waterchoosen:uploadwaterbill.upwaterbill,
+            }
+            url=`/v2/send/message/all/tenant`;
+        }
+        
+
+        let title='Are you sure to Send ('+uploadwaterbill.upwaterbill.length;
+        let text=waterbillpropertyid.label!==undefined && waterbillpropertyid.label;
+        Swal({
+            title:title+') Selected Tenant Messages ?',
+            text:text,
+            buttons:true,
+            infoMode:true,
+        })
+        .then((willcontinue) =>{
+            if(willcontinue){
+                setLoading(true);
+                Swal("Sending....","Please Wait");
+                axios.post(url,form)
+                .then(response=>{
+                    if(socket) {
+                        socket.emit('message_sent',response.data.message);
+                    }
+                    if(response.data.status=== 200){
+                        Swal("Success",response.data.message);
+                    }
+                    else if(response.data.status=== 401){
+                        setLoggedOff(true);    
+                        Swal("Error",response.data.message,"error");
+                    }
+                    else if(response.data.status=== 500){
+                        Swal("Error",response.data.message,"error");
+                    }
+                    setLoading(false);
+                    setUploadWaterbill({
+                        upwaterbill:[],
+                    })
+                })
+                .catch((error)=>{
+                    if(!localStorage.getItem("auth_token")){
+                        let ex=error['response'].data.message;
+                        if(ex==='Unauthenticated.'){
+                            if(!localStorage.getItem("auth_token")){
+                                setLoading(false)
+                                setLoggedOff(true); 
+                            }  
+                            else{ 
+                                setLoggedOff(true); 
+                                localStorage.removeItem('auth_token');
+                                localStorage.removeItem('auth_name');
+                            }              
+                        }
+                        else{
+                            Swal("Error",""+error,"error");
+                        }
+                        setLoading(false)
+                    }
+                    else{
+                        let ex=error['response'].data.message;
+                        if(ex==='Unauthenticated.'){
+                            setLoggedOff(true); 
+                            localStorage.removeItem('auth_token');
+                            localStorage.removeItem('auth_name');
+                        }
+                        else{
+                            setLoading(false)
+                            Swal("Error",""+error,"error");
+                        }
+                    }
+                })
+            }
+            else{
+                setLoading(false);
+            }
+        })
+
+    }
+
+    const sendMessage= (waterbill,message)=>{
+        // let message='WATER BILL: Greetings '+waterbill.housename+' :'+waterbill.monthdate+';Previous:'+waterbill.previous+';Current:'+waterbill.current+';UnitCost Kshs.'+waterbill.cost+';Units:'+waterbill.units+';'+(waterbill.total_os>0?'CC:'+waterbill.total+';Other:'+waterbill.total_os+';':'')+'Total Kshs.'+(waterbill.total+waterbill.total_os)+'. Thank You';
+        if((message).trim() ===''){
+            Swal("Enter Message Details","Please Enter Message you wish to Send","error");
+            return;
+        }
+        const form={
+            Phone:waterbill.phone,
+            Message:message,
+        }
+
+        let title='Are you sure to Send';
+        let text="Phone numbers ( "+waterbill.phone+" ) \n Message: "+message;
+        Swal({
+            title:title+' this Message ?',
+            text:text,
+            buttons:true,
+            infoMode:true,
+        })
+        .then((willcontinue) =>{
+            if(willcontinue){
+                setLoading(true);
+                Swal("Sending....","Please Wait");
+                axios.post('/v2/send/message/new',form)
+                .then(response=>{
+                    if(socket) {
+                        socket.emit('message_sent',response.data.message);
+                    }
+                    if(response.data.status=== 200){
+                        loadMessages();
+                        Swal("Success",response.data.message);
+                    }
+                    else if(response.data.status=== 401){
+                        setLoggedOff(true);    
+                        Swal("Error",response.data.message,"error");
+                    }
+                    else if(response.data.status=== 500){
+                        Swal("Error",response.data.message,"error");
+                    }
+                    else{
+                        Swal("Error","Please Review the Errors","error");
+                    }
+                    setLoading(false);
+                
+                })
+                .catch((error)=>{
+                    if(!localStorage.getItem("auth_token")){
+                        let ex=error['response'].data.message;
+                        if(ex==='Unauthenticated.'){
+                            if(!localStorage.getItem("auth_token")){
+                                setLoggedOff(true); 
+                            }  
+                            else{ 
+                                setLoggedOff(true); 
+                                localStorage.removeItem('auth_token');
+                                localStorage.removeItem('auth_name');
+                            }              
+                        }
+                        else{
+                            Swal("Error",""+error,"error");
+                        }
+                        setLoading(false)
+                    }
+                    else{
+                        let ex=error['response'].data.message;
+                        if(ex==='Unauthenticated.'){
+                            setLoggedOff(true); 
+                            localStorage.removeItem('auth_token');
+                            localStorage.removeItem('auth_name');
+                        }
+                        else{
+                            setLoading(false)
+                            Swal("Error",""+error,"error");
+                        }
+                    }
+                })
+            }
+            else{
+                setLoading(false);
+            }
+        })
+
+    }
+
+  return (
+    <>
+    <div className="wrapper">
+        {loggedoff ? 
+            <ReLogin setLoggedOff={setLoggedOff} loggedoff={loggedoff} />
+        :
+        <>
+        <DashNavBar setClosed={setClosed} closed={closed} active='tenantmessages'/>
+        <DashSideNavBar setClosed={setClosed} closed={closed} active='tenantmessages'/>
+        {/* className={`nav-link ${active==='home'?'active':''}`} */}
+        
+        <main className="py-3">
+            <div className={`content-wrapper ${closed?'closed':''}`}>
+                    <section className="content">
+                    <div className="container">
+                        <div className="row justify-content-center">
+
+                        <div className="col-lg-3 ">
+                            <div className="row m-0 p-0">
+
+                                <div className="col-md-12 m-0 p-0 mt-2 mb-4">
+                                    <div className="card border-info elevation-2" >
+                                        <div className="card-body text-center p-0 m-1">
+                                            <div className="row m-0 p-0">
+                                                <div className="col-md-12 m-0 mt-1 p-0">
+                                                    {loadingmonths &&
+                                                        <Spinner  variant="info" size="md" role="status"></Spinner>
+                                                    }
+                                                    {!loadingmonths &&
+                                                        <Select
+                                                            placeholder= "Select Property"
+                                                            value={waterbillpropertyid}
+                                                            name="waterbill-property"
+                                                            options={propertyinfo}
+                                                            onChange={handlePropertyChange}
+                                                        />
+                                                    }
+                                                </div>
+
+                                                <div className="col-md-12 m-0 mt-1 p-0">
+                                                    {loadingmonths &&
+                                                        <Spinner  variant="info" size="md" role="status"></Spinner>
+                                                    }
+                                                    {!loadingmonths &&
+                                                        <div className="form-group row m-0 p-1 pb-2">
+                                                            <div className="col-12 m-0 p-0">
+                                                                <textarea id="Message" type="text" className="form-control" rows='3' name="Message" value={formdata.Message} onChange={handleInputChange} placeholder="Compose Message to send to tenants Here"></textarea>
+                                                                <div className="text-black text-sm">Characters: {msglength}, {msgcount} Message(s)</div>
+                                                
+                                                                {formdata.error_list && formdata.error_list.Message && 
+                                                                    <span className="help-block text-danger">
+                                                                        <strong>{formdata.error_list.Message}</strong>
+                                                                    </span>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+
+                                                {!loadingmonths &&
+                                                    <div className='m-0 p-1 text-xs'>
+                                                        <div className='justify-content-center  m-0 p-0'>
+                                                            {/* <p className='text-success p-0 border-5'> Please Click on <strong>Send</strong> Button to Send A single Message</p> */}
+                                                            
+                                                            <div className='bg-light text-dark m-1 p-1 border-5 text-left'>Use <strong>Send</strong> for Single Message. No of Characters and total message to be priced is shown.</div>
+                                                            <div className='elevation-3 border-5'>
+                                                                <div className='elevation-2 p-1 bg-info text-dark text-sm bold'>Include Tenant details in the Message box.</div>
+                                                                <div className='bg-light text-dark p-1 border-5 text-left'><strong>Tenant Name:</strong> {'{name}'}.</div>
+                                                                <div className='bg-light text-dark p-1 border-5 text-left'><strong>Tenant Firstname:</strong> {'{fname}'}.</div>
+                                                                <div className='bg-light text-dark p-1 border-5 text-left'><strong>Tenant Housename:</strong> {'{house}'}.</div>
+                                                                <div className='elevation-2 p-1 bg-secondary text-white'>
+                                                                    <strong>Example</strong> <br/>
+                                                                    Greetings {'{name}'} of {'{house}'}, Please clear you Nov 2024 arrears before 10th Nov. Thank you.
+                                                                </div>
+                                                            </div>
+                                                            
+                                                        </div>
+                                                    </div>
+                                                }
+                                                {uploadwaterbill.upwaterbill.length > 0 ?
+                                                    <>
+                                                        {!loading && 
+                                                            <span className="text-xs float-right m-0 p-1">
+                                                                <button className='btn btn-success border-success p-1 pt-0 pb-0' onClick={submitWaterbill}>
+                                                                    Send ({uploadwaterbill.upwaterbill.length}) {waterbillpropertyid.label!==undefined && waterbillpropertyid.label } Tenant Messages 
+                                                                </button>
+                                                            </span>
+                                                        }
+                                                    </>
+                                                    :
+                                                    <>
+                                                    <p className='m-0 p-0 text-center text-danger'>Please Select two or more Messages to Send at Once </p>
+                                                    </>
+                                                }
+
+                                            </div>
+                                                
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            
+                        </div>
+
+                        <div className="col-lg-9">
+                            <div className="row m-0 p-0">
+
+                                <div className="col-md-12 m-0 p-0 mt-2 mb-4">
+                                    <div className="card border-info m-0 p-1" >
+                                        <div className="card-header bg-info text-white elevation-2 m-0 p-0">
+                                            <p className='text-center p-1 m-0'>
+                                                {!loadingwater &&
+                                                    <span className="text-xs float-left m-0 p-0">
+                                                        {(uploadwaterbill.upwaterbill.length) != (totalvalid) ?
+                                                            <label className="selwaterbill m-0 p-0 bg-light border-info" style={{"fontSize":"10px"}}>
+                                                                <input type="checkbox" 
+                                                                    className="selectedwaterbilltenants" 
+                                                                    name="waterbillvalues[]"
+                                                                    value="all"
+                                                                    checked={allchecked}
+                                                                    onChange={handleChange} />
+                                                                    <span className="text-md  m-0 p-0 pl-1 pr-1 text-bold text-dark">
+                                                                        {uploadwaterbill.upwaterbill && uploadwaterbill.upwaterbill.length} /
+                                                                        {totalvalid}
+                                                                    </span>
+                                                            </label>
+                                                            :
+                                                            <label className="selwaterbill m-0 p-0 bg-secondary border-info" style={{"fontSize":"10px"}}>
+                                                                <input type="checkbox" 
+                                                                    className="selectedwaterbilltenants" 
+                                                                    name="waterbillvalues[]"
+                                                                    value="all"
+                                                                    checked={allchecked}
+                                                                    onChange={handleChange} />
+                                                                    <span className="text-md  m-0 p-0 pl-1 pr-1 text-bold text-dark">
+                                                                        {uploadwaterbill.upwaterbill && uploadwaterbill.upwaterbill.length} /
+                                                                        {totalvalid}
+                                                                    </span>
+                                                            </label>
+                                                            }
+                                                    </span>
+                                                   
+                                                }
+                                                <span>
+                                                    {loadingwater &&
+                                                        <Spinner  variant="light" size="md" role="status"></Spinner>
+                                                    }
+                                                    {!loadingwater &&
+                                                        <>
+                                                            Tenant Messages {waterbillpropertyid.label!==undefined && " for: "+waterbillpropertyid.label} 
+                                                          
+                                                        </>
+                                                    }
+                                                </span>
+
+                                                <span className="text-xs float-right m-0 p-0">
+                                                    <input onChange={handleSearchChange} value={search.value} className='border-info p-1 pt-0 pb-0' placeholder='Search House,Tenant' />
+                                                </span>
+                                            </p>
+                                            
+                                        </div>
+
+                                        <div className="card-body text-center m-0 p-1" >
+                                        
+                                            <div className="row m-0 p-0">
+                                                <div className="messageinfo col-12 m-0 p-0">
+                                                
+                                                    {loadingwater &&
+                                                        <div className="col-12 text-left m-0 p-1 mt-1 mb-2">
+                                                            <TableSmallSpinner />
+                                                        </div>
+                                                    }
+
+                                                    {loadingmonths &&
+                                                        <div className="col-12 text-left m-0 p-1 mt-1 mb-2">
+                                                            <TableSmallSpinner />
+                                                        </div>
+                                                    }
+                                                
+                                                    {!loadingwater && !loadingmonths &&
+                                                        <>
+                                                            {(search.value==='')?
+                                                                <>
+                                                                    {waterbilldata  && waterbilldata.map((waterbill,key) => (
+                                                                        <TenantMessageTable waterbill={waterbill} key={key} no={key} handleShow={handleShow} uploadwaterbill={uploadwaterbill} allchecked={allchecked} handleChange={handleChange} sendMessage={sendMessage} formdata={formdata} /> 
+                                                                    ))
+                                                                    }
+                                                                </>
+                                                            :
+                                                                <>
+                                                                    {search.result  && search.result.map((waterbill,key) => (
+                                                                        <TenantMessageTable waterbill={waterbill} key={key} no={key} handleShow={handleShow} uploadwaterbill={uploadwaterbill} allchecked={allchecked} handleChange={handleChange} sendMessage={sendMessage} formdata={formdata} /> 
+                                                                    ))
+                                                                    }
+                                                                </>
+                                                            
+                                                            }
+                                                        </>   
+                                                    }
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                        <div className="card-footer bg-light text-dark elevation-2 m-0 p-0">
+                                                <div className='p-1 m-0'>
+                                                {!loadingwater &&
+                                                    <>
+                                                        {preview && 
+                                                            (<span className="text-lg float-left m-0 p-0 pr-2 border-info text-bold text-danger">
+                                                                {uploadwaterbill.upwaterbill && uploadwaterbill.upwaterbill.length} /
+                                                                {totalvalid}
+                                                            </span>)
+                                                        }
+                                                    </>
+                                                }
+
+                                                {loading && 
+                                                    <span className="mx-auto justify-content-center text-center text-white">
+                                                            <Spinner
+                                                            as="span"
+                                                            variant='dark'
+                                                            animation="border"
+                                                            size="lg"
+                                                            role="status"
+                                                            aria-hidden="true"
+                                                            />
+                                                            <span className='text-white' style={{"padding": "10px","display":"inline-block"}}>
+                                                                {waterbillpropertyid.label!==undefined && waterbillpropertyid.label+" "+waterbillmonth.label} ...
+                                                            </span>
+                                                            
+                                                    </span>
+                                                }
+
+                                                {uploadwaterbill.upwaterbill.length > 0 ?
+                                                    <>
+                                                        {!loading && 
+                                                            <span className="text-xs float-right m-0 p-1">
+                                                                <button className='btn btn-success border-success p-1 pt-0 pb-0' onClick={submitWaterbill}>
+                                                                    Send ({uploadwaterbill.upwaterbill.length}) {waterbillpropertyid.label!==undefined && waterbillpropertyid.label } Tenant Messages 
+                                                                </button>
+                                                            </span>
+                                                        }
+                                                    </>
+                                                    :
+                                                    <>
+                                                    <p className='m-0 p-0 text-center text-danger'>Please Select two or more Messages to Send at Once </p>
+                                                    </>
+                                                }
+                                            </div>
+                                            
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                
+                            </div>
+                        </div>
+
+                        
+                            
+                        </div>
+
+                    </div>
+
+
+                </section>
+            </div>
+        </main>
+
+
+        <DashFooter />
+        </>
+        }
+      </div>
+    </>
+  );
+}
+
+export default MessageTenant;
