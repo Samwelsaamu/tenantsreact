@@ -234,8 +234,7 @@ Route::group(['middleware' => ['auth:sanctum','twofactorverified']], function ()
     
     Route::post('get/roles/permissions',[AuthLoginController::class,'getRolesPermissions'])->middleware("verified");
 
-    // https://api.postman.com/collections/4395533-1a8f1c81-0502-4f9d-8699-d45551834b7d?access_key=PMAT-01J8R72MBSHP5CJ4J9Q46TG6G9
-
+   
 });
 
 
