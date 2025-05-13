@@ -63,12 +63,7 @@ class MPesaController extends Controller
 
 
 
-        // $ch = curl_init(env('MPESA_URL_ENDPOINT_ACCESS_TOKEN'));
-        // curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Basic SnltV1M3VzAxRkRUR0JqcjBzU29jWjJWSWFaV3o3dVB3NTFIT0hweWlHMDZic0tLOjdhM0pFb1NQaTgyODR3QkRXWXdQN1NGS0ZIOTEzN2hzc25oSEVXcVZ2Zk1XMk9FRTdwaFFJN0dhcTBzc1ZvcTQ=']);
-        // curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        // $response = curl_exec($ch);
-        // curl_close($ch);
-        // echo $response;
+       
         
     }
 
@@ -88,22 +83,7 @@ class MPesaController extends Controller
 
         return $response;
 
-        // $ch = curl_init('https://sandbox.safaricom.co.ke/mpesa/c2b/v1/registerurl');
-        // curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        //     'Authorization: Bearer 2GqjvOs8nL7HHgxM6WkaoNlq5tu6',
-        //     'Content-Type: application/json'
-        // ]);
-        // curl_setopt($ch, CURLOPT_POST, 1);
-        // // curl_setopt($ch, CURLOPT_POSTFIELDS,{
-        // //     "ShortCode": 600997,
-        // //     "ResponseType": "Completed",
-        // //     "ConfirmationURL": "https://mydomain.com/confirmation",
-        // //     "ValidationURL": "https://mydomain.com/validation",
-        // // });
-        // curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        // $response     = curl_exec($ch);
-        // curl_close($ch);
-        // echo $response;
+      
     }
 
     public function simulateTransaction(Request $request){
@@ -122,23 +102,7 @@ class MPesaController extends Controller
 
         return $response;
 
-        // $ch = curl_init('https://sandbox.safaricom.co.ke/mpesa/c2b/v1/simulate');
-        // curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        //     'Authorization: Bearer lkR6CKwFKaKBvqp7vGviWPY0EAoI',
-        //     'Content-Type: application/json'
-        // ]);
-        // curl_setopt($ch, CURLOPT_POST, 1);
-        // curl_setopt($ch, CURLOPT_POSTFIELDS, {
-        //     "ShortCode": 600987,
-        //     "CommandID": "CustomerPayBillOnline",
-        //     "amount": "1",
-        //     "MSISDN": "254705912645",
-        //     "BillRefNumber": "2312",
-        // });
-        // curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        // $response     = curl_exec($ch);
-        // curl_close($ch);
-        // echo $response;
+        
 
     }
 
@@ -183,7 +147,5 @@ class MPesaController extends Controller
         return $curl_response;
     }
 
-    // ngrok config add-authtoken 1jYK8CX76eKr4lnetQ1ojVaaeMa_2vpk2HokS3AqVvpKeo97v
-    
     
 }
