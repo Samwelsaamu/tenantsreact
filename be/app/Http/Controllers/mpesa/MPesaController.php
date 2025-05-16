@@ -38,6 +38,15 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class MPesaController extends Controller
 {
     public static function getAccessToken(){
+        // $userrole=Auth::user()->Userrole;
+        // if($userrole!='Dev'){
+        //     $error="You do not have rights to Update Api Keys.";
+        //     return $error;
+        //     // return response()->json([
+        //     //     'status'=>500,
+        //     //     'message'=>$error,
+        //     // ]);
+        // }
         $curl = curl_init(env('MPESA_URL_ENDPOINT_ACCESS_TOKEN'));
 
         curl_setopt_array(
@@ -70,6 +79,16 @@ class MPesaController extends Controller
 
     public function registerURLs(){
 
+        // $userrole=Auth::user()->Userrole;
+        // if($userrole!='Dev'){
+        //     $error="You do not have rights to Update Api Keys.";
+        //     return $error;
+        //     // return response()->json([
+        //     //     'status'=>500,
+        //     //     'message'=>$error,
+        //     // ]);
+        // }
+
         $body=array(
             'ShortCode' => env('MPESA_SHORTCODE'),
             'ResponseType' =>'Completed',
@@ -87,6 +106,16 @@ class MPesaController extends Controller
     }
 
     public function simulateTransaction(Request $request){
+
+        // $userrole=Auth::user()->Userrole;
+        // if($userrole!='Dev'){
+        //     $error="You do not have rights to Update Api Keys.";
+        //     return $error;
+        //     // return response()->json([
+        //     //     'status'=>500,
+        //     //     'message'=>$error,
+        //     // ]);
+        // }
 
         $body=array(
             "ShortCode"=> 600987,

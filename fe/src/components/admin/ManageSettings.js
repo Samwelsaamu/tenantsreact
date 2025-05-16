@@ -389,6 +389,7 @@ function ManageSettings(props) {
         axios.get('/v2/get/agency/msg')
         .then(response=>{
             if(response.data.status=== 200){
+                setLoadingResApi("");
                 setAgencyMsg(response.data.msg)
                 setFormData({
                     Names:response.data.msg.Names,
@@ -2676,8 +2677,9 @@ function ManageSettings(props) {
                                                                                                 <LoadingDetailsSpinner />
                                                                                             :
                                                                                             <>
-                                                                                            {loadingresapi=="You do not have rights to Update Api Keys." &&
-                                                                                            
+                                                                                            {loadingresapi=="You do not have rights to Update Api Keys." ?
+                                                                                            ""
+                                                                                            :
                                                                                             <>
                                                                                             {!loading && 
                                                                                                 <>

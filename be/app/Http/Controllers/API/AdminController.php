@@ -13461,7 +13461,7 @@ public function saveMonthlyBillnew(Request $request)
             $userrole=Auth::user()->Userrole;
             
             if($userrole!='Dev'){
-                $error="You do not have rights to Update Api Keys. \n";
+                $error="You do not have rights to Update Api Keys.";
                 return response()->json([
                     'status'=>500,
                     'message'=>$error,
@@ -13671,7 +13671,7 @@ public function saveMonthlyBillnew(Request $request)
             try { 
                 $userrole=Auth::user()->Userrole;
                 if($userrole!='Dev'){
-                    $error="You do not have rights to Update Api Keys. \n";
+                    $error="You do not have rights to Update Api Keys.";
                     return response()->json([
                         'status'=>500,
                         'message'=>$error,
